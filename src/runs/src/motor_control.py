@@ -28,6 +28,7 @@ class MotorControl(Node):
     def lidar_callback(self, msg):
         """Process incoming LIDAR scan data."""
         self.lidar_ranges = msg.ranges
+        self.get_logger().info(f"LIDAR ranges received: {len(self.lidar_ranges)} points")
         self.avoid_obstacle()  # Call obstacle avoidance logic after receiving LIDAR data
 
     def camera_callback(self, msg):
@@ -40,6 +41,8 @@ class MotorControl(Node):
         """Process incoming velocity commands (manual control)."""
         linear_velocity = msg.linear.x
         angular_velocity = msg.angular.z
+
+        self.get_logger().info(f"Received cmd_vel: linear={linear_velocity}, angular={angular_velocity}")
 
         # Move the robot based on cmd_vel topic commands
         if linear_velocity > 0:
@@ -61,6 +64,8 @@ class MotorControl(Node):
 
             avg_left = sum(left_distances) / len(left_distances)
             avg_right = sum(right_distances) / len(right_distances)
+
+            self.get_logger().info(f"LIDAR Data: Min={min(self.lidar_ranges)}, Avg Left={avg_left}, Avg Right={avg_right}")
 
             if min(self.lidar_ranges) < 0.5:  # Stop if an obstacle is too close
                 self.get_logger().info("Obstacle too close, stopping.")
@@ -95,14 +100,15 @@ class MotorControl(Node):
 
     def turn(self, angular_velocity):
         """Turn the car based on the angular velocity."""
-        if angular_velocity > 0:
+        if angular_velocity > 0:  # Turn left
             self.motor_a.forward(0.5)
             self.motor_b.backward(0.5)
             self.get_logger().info(f'Turning left with angular velocity {angular_velocity}')
-        else:
+        elif angular_velocity < 0:  # Turn right
             self.motor_a.backward(0.5)
             self.motor_b.forward(0.5)
             self.get_logger().info(f'Turning right with angular velocity {angular_velocity}')
+
 
 def main(args=None):
     rclpy.init(args=args)
